@@ -1,0 +1,76 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.env
+.venv
+venv/
+env/
+
+# =========================
+# Airflow
+# =========================
+airflow.db
+airflow.cfg
+logs/
+*.log
+webserver_config.py
+
+# =========================
+# Data files (no subir data cruda)
+# =========================
+data/
+*.csv
+*.json
+*.parquet
+
+# =========================
+# BigQuery / GCP credentials
+# =========================
+*.json
+!example_credentials.json
+
+# =========================
+# Environment variables
+# =========================
+.env
+.env.*
+
+# =========================
+# Jupyter Notebooks
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# OS / Editor
+# =========================
+.DS_Store
+Thumbs.db
+
+# VSCode
+.vscode/
+
+# PyCharm
+.idea/
+
+# =========================
+# Build / dist
+# =========================
+build/
+dist/
+*.egg-info/
+
+# =========================
+# Logs
+# =========================
+*.log
+
+# =========================
+# Temporary files
+# =========================
+tmp/
+temp/
