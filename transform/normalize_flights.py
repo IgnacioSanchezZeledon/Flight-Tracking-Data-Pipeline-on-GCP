@@ -1,5 +1,4 @@
 import json
-import uuid
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -27,7 +26,6 @@ def normalize_flights(payload: dict) -> list[dict]:
 
     for state in states:
         row = {
-            "flight_id": str(uuid.uuid4()),
             "ingestion_timestamp": ingestion_timestamp,
             "source_timestamp": source_timestamp,
             "icao24": state[0],
