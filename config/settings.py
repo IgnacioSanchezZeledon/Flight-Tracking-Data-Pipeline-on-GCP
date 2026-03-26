@@ -23,6 +23,7 @@ DATASET = os.getenv("BQ_DATASET", "flight_data")
 
 RAW_TABLE = "raw_flights_api"
 STAGING_TABLE = "stg_flights"
+FACT_TABLE = "fact_flight_observations"
 
 # ========================
 # API
