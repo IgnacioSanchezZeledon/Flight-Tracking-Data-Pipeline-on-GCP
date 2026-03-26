@@ -14,7 +14,7 @@ env/
 # =========================
 # Airflow
 # =========================
-.airflow/
+airflow/
 airflow.db
 airflow.cfg
 logs/
