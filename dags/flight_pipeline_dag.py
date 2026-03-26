@@ -7,7 +7,11 @@ from airflow.decorators import dag, task
 
 from extract.extract_flights import extract_and_save_raw
 from transform.normalize_flights import transform_raw_to_processed
-from load.load_to_bigquery import load_raw_file_to_bigquery, load_processed_to_bigquery
+from load.load_to_bigquery import (
+    load_raw_file_to_bigquery,
+    load_processed_to_bigquery,
+    load_processed_to_fact_bigquery,
+)
 from checks.bq_checks import run_staging_checks
 
 logger = logging.getLogger(__name__)
@@ -26,6 +30,7 @@ DEFAULT_ARGS = {
     start_date=datetime(2026, 3, 1),
     catchup=False,
     tags=["local", "pipeline", "opensky", "bigquery"],
+    default_args=DEFAULT_ARGS,
     doc_md="""
     ### Flight Pipeline Local
 
@@ -35,10 +40,10 @@ DEFAULT_ARGS = {
     3. Load raw snapshot into BigQuery raw table
     4. Transform raw JSON into normalized NDJSON
     5. Load normalized data into BigQuery staging table
-    6. Run data quality checks on staging
+    6. Load normalized historical data into BigQuery fact table
+    7. Run data quality checks on staging
     """,
 )
-
 def flight_pipeline_local():
     @task(
         task_id="extract_raw_file",
@@ -116,6 +121,25 @@ def flight_pipeline_local():
         return result
 
     @task(
+        task_id="load_fact_table",
+        execution_timeout=timedelta(minutes=5),
+    )
+    def load_fact_table(transform_result: dict) -> dict:
+        processed_file_path = transform_result["processed_file_path"]
+        result = load_processed_to_fact_bigquery(processed_file_path)
+
+        logger.info(
+            "Fact table load task completed",
+            extra={
+                "processed_file_path": processed_file_path,
+                "rows_loaded": result["rows_loaded"],
+                "table_id": result.get("table_id"),
+            },
+        )
+
+        return result
+
+    @task(
         task_id="run_staging_quality_checks",
         execution_timeout=timedelta(minutes=3),
     )
@@ -131,14 +155,19 @@ def flight_pipeline_local():
             "Staging quality checks completed successfully",
             extra={"rows_loaded": rows_loaded},
         )
+    
 
     extract_result = extract_raw_file()
     raw_load_result = load_raw_table(extract_result)
     transform_result = transform_processed_file(extract_result)
+
     staging_load_result = load_staging_table(transform_result)
+    fact_load_result = load_fact_table(transform_result)
+
     quality_check_result = run_staging_quality_checks(staging_load_result)
 
     raw_load_result
+    fact_load_result
     quality_check_result
 
 

@@ -7,7 +7,7 @@ from typing import Generator, Iterable, Any
 from google.cloud import bigquery
 from google.api_core.exceptions import GoogleAPIError
 
-from config.settings import PROJECT_ID, DATASET, RAW_TABLE, STAGING_TABLE, BATCH_SIZE
+from config.settings import PROJECT_ID, DATASET, RAW_TABLE, STAGING_TABLE, BATCH_SIZE, FACT_TABLE
 
 logger = logging.getLogger(__name__)
 
@@ -238,6 +238,74 @@ def load_processed_to_bigquery(processed_file_path: str | Path) -> dict[str, Any
 
     logger.info(
         "Staging table loaded successfully",
+        extra={
+            "table_id": table_id,
+            "processed_file_path": str(processed_file_path),
+            "rows_loaded": total_loaded,
+        },
+    )
+
+    return {
+        "processed_file_path": str(processed_file_path),
+        "rows_loaded": total_loaded,
+        "table_id": table_id,
+    }
+
+def load_rows_to_fact_bigquery_in_batches(
+    rows: list[dict[str, Any]],
+    client: bigquery.Client,
+) -> int:
+    if not rows:
+        raise ValueError("Processed rows are empty")
+
+    table_id = f"{PROJECT_ID}.{DATASET}.{FACT_TABLE}"
+    total_loaded = 0
+
+    for batch_number, batch in enumerate(chunked(rows, BATCH_SIZE), start=1):
+        logger.info(
+            "Loading batch to fact table in BigQuery",
+            extra={
+                "table_id": table_id,
+                "batch_number": batch_number,
+                "batch_size": len(batch),
+                "write_disposition": bigquery.WriteDisposition.WRITE_APPEND,
+            },
+        )
+
+        _run_load_job(
+            client=client,
+            rows=batch,
+            table_id=table_id,
+            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
+            job_labels={"layer": "fact", "batch": str(batch_number)},
+        )
+
+        total_loaded += len(batch)
+
+    logger.info(
+        "Fact table load completed",
+        extra={
+            "table_id": table_id,
+            "total_rows_loaded": total_loaded,
+            "batch_size": BATCH_SIZE,
+        },
+    )
+
+    return total_loaded
+
+def load_processed_to_fact_bigquery(processed_file_path: str | Path) -> dict[str, Any]:
+    client = get_bigquery_client()
+    rows = load_ndjson_file(processed_file_path)
+
+    total_loaded = load_rows_to_fact_bigquery_in_batches(
+        rows=rows,
+        client=client,
+    )
+
+    table_id = f"{PROJECT_ID}.{DATASET}.{FACT_TABLE}"
+
+    logger.info(
+        "Fact table loaded successfully",
         extra={
             "table_id": table_id,
             "processed_file_path": str(processed_file_path),
