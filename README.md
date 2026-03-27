@@ -255,7 +255,9 @@ The data is visualized through a Looker Studio dashboard with three pages:
 - **Geographic Analysis** — World map of flight activity, top countries by unique aircraft, and a detailed country breakdown table.
 - **Flight Status** — Distribution analysis of aircraft in air vs on ground.
 
-> *Dashboard screenshots will be added once sufficient historical data has been collected.*
+![Dashboard Overview](images/dashboard_overview.png)
+
+👉 [View Dashboard](https://lookerstudio.google.com/reporting/01afa572-abfe-431d-ae87-cf64534a0659)
 
 ---
 
